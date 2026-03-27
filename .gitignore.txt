@@ -1,0 +1,16 @@
+# Backend (Spring)
+backend/target/
+backend/.idea/
+backend/*.log
+
+# Frontend (React)
+frontend/node_modules/
+frontend/dist/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
