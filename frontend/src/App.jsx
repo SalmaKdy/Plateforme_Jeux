@@ -1,21 +1,31 @@
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-function App() {
-  const [message, setMessage] = useState('Loading...')
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import About from "./pages/About";
+import Games from "./pages/Games";
+import Dashboard from "./pages/Dashboard";
 
-  useEffect(() => {
-    fetch('http://localhost:8080/api/hello')
-        .then(res => res.text())
-        .then(data => setMessage(data))
-        .catch(err => setMessage('Error: ' + err.message))
-  }, [])
-
-  return (
-      <div>
-        <h1>Frontend React</h1>
-        <p>{message}</p>
-      </div>
-  )
+function ProtectedRoute({ children }) {
+    const token = localStorage.getItem("token");
+    if (!token) return <Navigate to="/login" replace />;
+    return children;
 }
 
-export default App
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/games" element={<Games />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            </Routes>
+        </BrowserRouter>
+    );
+}
+
+export default App;

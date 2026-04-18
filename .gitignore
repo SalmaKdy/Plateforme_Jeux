@@ -1,0 +1,46 @@
+# ─── IDE — IntelliJ / IDEA ───────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+out/
+
+# ─── IDE — VS Code ───────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+
+# ─── OS ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs ────────────────────────────────────────────────
+*.log
+logs/
+backend/run.log
+
+# ─── Maven / Spring Boot build output ────────────────────
+**/target/
+!**/src/**/target/
+
+# ─── Node / npm ──────────────────────────────────────────
+node_modules/
+/package-lock.json
+
+# ─── Vite / React build output ───────────────────────────
+dist/
+dist-ssr/
+*.local
+.cache/
+
+# ─── Environment files (never commit secrets) ────────────
+.env
+.env.*
+!.env.example
+
+# ─── Miscellaneous ───────────────────────────────────────
+*.class
+*.jar
+!**/src/**/*.jar
+.gitignore.txt
