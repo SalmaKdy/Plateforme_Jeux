@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tetris — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:8px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#wrap{display:flex;gap:16px;align-items:flex-start}
+canvas{background:#080f20;border:2px solid rgba(95,194,186,.3);border-radius:8px;box-shadow:0 0 24px rgba(95,194,186,.1)}
+#side{display:flex;flex-direction:column;gap:12px;width:110px}
+.panel{background:rgba(10,22,44,.8);border:1px solid rgba(95,194,186,.2);border-radius:10px;padding:10px;text-align:center}
+.panel label{display:block;font-size:.62rem;color:#8bacc8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.panel span{font-size:1.3rem;font-weight:700;color:#5FC2BA}
+#nextCanvas{background:#080f20;border-radius:6px;border:1px solid rgba(95,194,186,.15)}
+#msg{margin-top:10px;font-size:.82rem;color:#8bacc8;text-align:center;max-width:360px}
+#btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+.tbtn{padding:7px 14px;background:rgba(95,194,186,.12);border:1px solid rgba(95,194,186,.28);color:#5FC2BA;border-radius:7px;cursor:pointer;font-size:.8rem}
+.tbtn:hover{background:rgba(95,194,186,.22)}
+</style>
+</head>
+<body>
+<h1>🧩 Tetris</h1>
+<div id="wrap">
+  <canvas id="c" width="200" height="400"></canvas>
+  <div id="side">
+    <div class="panel"><label>Score</label><span id="sc">0</span></div>
+    <div class="panel"><label>Lignes</label><span id="li">0</span></div>
+    <div class="panel"><label>Niveau</label><span id="lv">1</span></div>
+    <div class="panel"><label>Suivant</label><canvas id="nextCanvas" width="90" height="90"></canvas></div>
+  </div>
+</div>
+<div id="msg">← → descendre · ↑ tourner · Espace = chute · Entrée = démarrer</div>
+<div id="btns">
+  <button class="tbtn" onclick="newGame()">Nouvelle partie</button>
+</div>
+<script>
+const COLS=10,ROWS=20,CS=20;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const nc=document.getElementById('nextCanvas'),nctx=nc.getContext('2d');
+
+const PIECES=[
+  {color:'#5FC2BA',r:[[[0,0],[0,1],[0,2],[0,3]],[[0,2],[1,2],[2,2],[3,2]],[[2,0],[2,1],[2,2],[2,3]],[[0,1],[1,1],[2,1],[3,1]]]},
+  {color:'#f0c060',r:[[[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[1,0],[1,1]]]},
+  {color:'#a855f7',r:[[[0,1],[1,0],[1,1],[1,2]],[[0,0],[1,0],[1,1],[2,0]],[[1,0],[1,1],[1,2],[2,1]],[[0,1],[1,0],[1,1],[2,1]]]},
+  {color:'#22c55e',r:[[[0,1],[0,2],[1,0],[1,1]],[[0,0],[1,0],[1,1],[2,1]],[[1,1],[1,2],[2,0],[2,1]],[[0,1],[1,1],[1,2],[2,2]]]},
+  {color:'#e05c5c',r:[[[0,0],[0,1],[1,1],[1,2]],[[0,2],[1,1],[1,2],[2,1]],[[1,0],[1,1],[2,1],[2,2]],[[0,1],[1,0],[1,1],[2,0]]]},
+  {color:'#3b82f6',r:[[[0,0],[1,0],[1,1],[1,2]],[[0,0],[0,1],[1,0],[2,0]],[[1,0],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,0],[2,1]]]},
+  {color:'#f97316',r:[[[0,2],[1,0],[1,1],[1,2]],[[0,0],[1,0],[2,0],[2,1]],[[1,0],[1,1],[1,2],[2,0]],[[0,0],[0,1],[1,1],[2,1]]]},
+];
+
+let board,cur,next,score,lines,level,dropT,interval,animId,over,started;
+
+function rndPiece(){return{...PIECES[Math.floor(Math.random()*PIECES.length)],rot:0,x:3,y:0};}
+
+function newGame(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  score=0;lines=0;level=1;over=false;started=true;
+  cur=rndPiece();next=rndPiece();
+  dropT=0;interval=700;
+  document.getElementById('msg').textContent='← → déplacer · ↑ tourner · Espace = chute rapide';
+  update();
+}
+
+function cells(p){return p.r[p.rot].map(([r,c])=>[r+p.y,c+p.x]);}
+
+function valid(p){return cells(p).every(([r,c])=>r<ROWS&&c>=0&&c<COLS&&(r<0||!board[r][c]));}
+
+function place(){
+  cells(cur).forEach(([r,c])=>{if(r>=0)board[r][c]=cur.color;});
+  // clear lines
+  let cleared=0;
+  for(let r=ROWS-1;r>=0;r--){
+    if(board[r].every(c=>c)){board.splice(r,1);board.unshift(Array(COLS).fill(null));cleared++;r++;}
+  }
+  if(cleared){
+    const pts=[0,100,300,500,800];
+    score+=pts[cleared]*level;lines+=cleared;level=Math.floor(lines/10)+1;
+    interval=Math.max(80,700-level*60);
+  }
+  cur={...next,rot:0,x:3,y:0};next=rndPiece();
+  if(!valid(cur)){over=true;started=false;document.getElementById('msg').innerHTML='<strong style="color:#e05c5c">Game Over</strong> — Score : '+score+' · Nouvelle partie ↑';}
+}
+
+function drop(){cur.y++;if(!valid(cur)){cur.y--;place();}}
+
+function hardDrop(){while(valid({...cur,y:cur.y+1}))cur.y++;drop();}
+
+function rotate(){
+  const p={...cur,rot:(cur.rot+1)%4};
+  if(valid(p))cur=p;
+  else if(valid({...p,x:p.x-1})){cur={...p,x:p.x-1};}
+  else if(valid({...p,x:p.x+1})){cur={...p,x:p.x+1};}
+}
+
+let lastT=0;
+function update(t=0){
+  animId=requestAnimationFrame(update);
+  if(started&&!over){
+    dropT+=t-lastT;
+    if(dropT>interval){dropT=0;drop();}
+  }
+  lastT=t;
+  draw();
+}
+
+function ghostY(){let gy=cur.y;while(valid({...cur,y:gy+1}))gy++;return gy;}
+
+function drawCell(c,x,y,color,alpha=1){
+  c.globalAlpha=alpha;
+  c.fillStyle=color;c.shadowColor=color;c.shadowBlur=6;
+  c.beginPath();c.roundRect(x+1,y+1,CS-2,CS-2,3);c.fill();
+  c.fillStyle='rgba(255,255,255,.15)';c.beginPath();c.roundRect(x+2,y+2,CS-4,5,2);c.fill();
+  c.shadowBlur=0;c.globalAlpha=1;
+}
+
+function draw(){
+  ctx.fillStyle='#080f20';ctx.fillRect(0,0,COLS*CS,ROWS*CS);
+  // grid
+  ctx.strokeStyle='rgba(95,194,186,.04)';ctx.lineWidth=0.5;
+  for(let r=0;r<ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CS);ctx.lineTo(COLS*CS,r*CS);ctx.stroke();}
+  for(let c=0;c<COLS;c++){ctx.beginPath();ctx.moveTo(c*CS,0);ctx.lineTo(c*CS,ROWS*CS);ctx.stroke();}
+  // board
+  board.forEach((row,r)=>row.forEach((col,c)=>{if(col)drawCell(ctx,c*CS,r*CS,col);}));
+  // ghost
+  if(started&&!over){
+    const gy=ghostY();
+    cur.r[cur.rot].forEach(([r,c])=>{
+      const y=(r+gy)*CS,x=(c+cur.x)*CS;
+      if(r+gy>=0){ctx.strokeStyle=cur.color;ctx.lineWidth=1;ctx.globalAlpha=0.3;ctx.beginPath();ctx.roundRect(x+1,y+1,CS-2,CS-2,3);ctx.stroke();ctx.globalAlpha=1;}
+    });
+    // current
+    cur.r[cur.rot].forEach(([r,c])=>{if(r+cur.y>=0)drawCell(ctx,(c+cur.x)*CS,(r+cur.y)*CS,cur.color);});
+  }
+  if(over){ctx.fillStyle='rgba(6,13,26,.75)';ctx.fillRect(0,0,COLS*CS,ROWS*CS);ctx.fillStyle='#e05c5c';ctx.font='bold 18px Segoe UI';ctx.textAlign='center';ctx.fillText('GAME OVER',COLS*CS/2,ROWS*CS/2-10);ctx.fillStyle='#8bacc8';ctx.font='13px Segoe UI';ctx.fillText('Score: '+score,COLS*CS/2,ROWS*CS/2+14);}
+  // update HUD
+  document.getElementById('sc').textContent=score;
+  document.getElementById('li').textContent=lines;
+  document.getElementById('lv').textContent=level;
+  // next piece
+  nctx.fillStyle='#080f20';nctx.fillRect(0,0,90,90);
+  if(next){next.r[0].forEach(([r,c])=>{nctx.fillStyle=next.color;nctx.shadowColor=next.color;nctx.shadowBlur=4;nctx.beginPath();nctx.roundRect(c*18+15,r*18+15,16,16,3);nctx.fill();nctx.shadowBlur=0;});}
+}
+
+document.addEventListener('keydown',e=>{
+  if(!started&&e.key==='Enter'){newGame();return;}
+  if(!started||over)return;
+  if(e.key==='ArrowLeft'){const p={...cur,x:cur.x-1};if(valid(p))cur=p;}
+  else if(e.key==='ArrowRight'){const p={...cur,x:cur.x+1};if(valid(p))cur=p;}
+  else if(e.key==='ArrowDown'){drop();}
+  else if(e.key==='ArrowUp'){rotate();}
+  else if(e.key===' '){hardDrop();}
+  if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key))e.preventDefault();
+});
+
+// mobile swipe
+let sx2,sy2;
+cv.addEventListener('touchstart',e=>{sx2=e.touches[0].clientX;sy2=e.touches[0].clientY;},{passive:true});
+cv.addEventListener('touchend',e=>{
+  if(!started)return;
+  const dx=e.changedTouches[0].clientX-sx2,dy=e.changedTouches[0].clientY-sy2;
+  if(Math.abs(dx)<10&&Math.abs(dy)<10){rotate();return;}
+  if(Math.abs(dy)>Math.abs(dx)){if(dy>0)hardDrop();}
+  else{const p={...cur,x:cur.x+(dx>0?1:-1)};if(valid(p))cur=p;}
+},{passive:true});
+
+newGame();
+</script>
+</body>
+</html>

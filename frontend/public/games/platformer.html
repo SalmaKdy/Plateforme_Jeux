@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Platformer — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:6px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+canvas{background:#080f20;border:2px solid rgba(95,194,186,.3);border-radius:10px;box-shadow:0 0 30px rgba(95,194,186,.1)}
+#msg{margin-top:10px;font-size:.88rem;color:#8bacc8;text-align:center}
+#btns{display:flex;gap:12px;margin-top:12px}
+.gbtn{width:58px;height:44px;border-radius:10px;background:rgba(95,194,186,.15);border:1.5px solid rgba(95,194,186,.3);color:#5FC2BA;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gbtn:active{background:rgba(95,194,186,.35)}
+</style>
+</head>
+<body>
+<h1>🏃 Platformer</h1>
+<canvas id="c" width="480" height="320"></canvas>
+<div id="msg">← → pour courir · ↑ / Espace pour sauter · Collectez les pièces !</div>
+<div id="btns">
+  <button class="gbtn" id="bl">◀</button>
+  <button class="gbtn" id="bjump">↑</button>
+  <button class="gbtn" id="br">▶</button>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=480,H=320,G=0.5,SPEED=3.2,JUMP_V=-11;
+const LEVELS=[
+  {platforms:[[0,300,200,18],[220,300,260,18],[0,220,120,14],[150,160,140,14],[320,200,160,14],[0,110,100,14],[230,130,120,14],[380,90,100,14]],coins:[[260,280],[340,280],[80,195],[200,140],[360,175],[50,85],[280,105],[420,65]],exit:{x:440,y:60,w:30,h:30}},
+  {platforms:[[0,300,480,18],[40,240,80,14],[160,200,80,14],[280,240,80,14],[380,180,100,14],[60,140,120,14],[240,140,120,14],[400,120,80,14],[160,80,100,14]],coins:[[70,215],[200,175],[320,215],[420,155],[110,115],[280,115],[430,95],[190,55]],exit:{x:200,y:45,w:30,h:30}},
+];
+let lv,p,coins,keys,score,lives,animId,lvObj,over;
+
+function startLevel(n){
+  lvObj=LEVELS[n%LEVELS.length];
+  p={x:20,y:250,w:22,h:28,vx:0,vy:0,onGround:false,dir:1,frame:0};
+  coins=lvObj.coins.map(([x,y])=>({x,y,r:10,got:false}));
+  over=false;
+}
+
+function init(){
+  lv=0;score=0;lives=3;keys={};
+  document.getElementById('msg').textContent='← → pour courir · ↑ / Espace pour sauter · Collectez les pièces !';
+  startLevel(lv);
+  if(animId)cancelAnimationFrame(animId);
+  loop();
+}
+
+function loop(){animId=requestAnimationFrame(loop);update();draw();}
+
+function resolveCollision(){
+  p.onGround=false;
+  lvObj.platforms.forEach(([px2,py2,pw,ph])=>{
+    if(p.x+p.w>px2&&p.x<px2+pw&&p.y+p.h>py2&&p.y<py2+ph){
+      const ol=p.x+p.w-px2,or2=px2+pw-p.x,ot=p.y+p.h-py2,ob=py2+ph-p.y;
+      const minO=Math.min(ol,or2,ot,ob);
+      if(minO===ot&&p.vy>=0){p.y=py2-p.h;p.vy=0;p.onGround=true;}
+      else if(minO===ob&&p.vy<0){p.y=py2+ph;p.vy=0;}
+      else if(minO===ol){p.x=px2-p.w;p.vx=0;}
+      else{p.x=px2+pw;p.vx=0;}
+    }
+  });
+}
+
+function update(){
+  if(over)return;
+  // input
+  if(keys.left){p.vx=-SPEED;p.dir=-1;}
+  else if(keys.right){p.vx=SPEED;p.dir=1;}
+  else p.vx*=0.7;
+  if(keys.jump&&p.onGround){p.vy=JUMP_V;p.onGround=false;}
+  // physics
+  p.vy+=G;p.x+=p.vx;p.y+=p.vy;
+  resolveCollision();
+  // screen wrap
+  if(p.x>W)p.x=-p.w;if(p.x<-p.w)p.x=W;
+  // fall
+  if(p.y>H+60){lives--;if(lives<=0){over=true;document.getElementById('msg').innerHTML='<strong style="color:#e05c5c">Game Over</strong> — Score : '+score+' · Clic pour rejouer';return;}startLevel(lv);}
+  // coins
+  coins.forEach(c=>{
+    if(c.got)return;
+    const dx=p.x+p.w/2-c.x,dy=p.y+p.h/2-c.y;
+    if(Math.hypot(dx,dy)<c.r+p.w/2){c.got=true;score+=10;}
+  });
+  // exit
+  const ex=lvObj.exit;
+  if(p.x+p.w>ex.x&&p.x<ex.x+ex.w&&p.y+p.h>ex.y&&p.y<ex.y+ex.h&&coins.every(c=>c.got)){
+    lv++;score+=50;startLevel(lv);
+    document.getElementById('msg').textContent='Niveau '+(lv)+' ! Collectez toutes les pièces pour avancer.';
+  }
+  p.frame=(p.frame+0.2)%4;
+}
+
+function draw(){
+  ctx.fillStyle='#080f20';ctx.fillRect(0,0,W,H);
+  // bg stars
+  ctx.fillStyle='rgba(95,194,186,.08)';
+  for(let i=0;i<20;i++){const sx=(i*97+lv*13)%W,sy=(i*67)%(H-40);ctx.beginPath();ctx.arc(sx,sy,1.5,0,Math.PI*2);ctx.fill();}
+  // platforms
+  lvObj.platforms.forEach(([px2,py2,pw,ph])=>{
+    ctx.fillStyle='#1a3560';ctx.shadowColor='#5FC2BA';ctx.shadowBlur=4;
+    ctx.beginPath();ctx.roundRect(px2,py2,pw,ph,4);ctx.fill();
+    ctx.fillStyle='rgba(95,194,186,.35)';ctx.fillRect(px2,py2,pw,3);
+  });
+  ctx.shadowBlur=0;
+  // exit (only if all coins collected)
+  const ex=lvObj.exit;
+  const allCoins=coins.every(c=>c.got);
+  ctx.fillStyle=allCoins?'rgba(95,194,186,.8)':'rgba(95,194,186,.25)';
+  ctx.shadowColor='#5FC2BA';ctx.shadowBlur=allCoins?16:4;
+  ctx.beginPath();ctx.roundRect(ex.x,ex.y,ex.w,ex.h,6);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=allCoins?'#060d1a':'#5FC2BA';ctx.font='bold 12px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('EXIT',ex.x+ex.w/2,ex.y+ex.h/2+4);
+  // coins
+  coins.forEach(c=>{
+    if(c.got)return;
+    ctx.fillStyle='#f0c060';ctx.shadowColor='#f0c060';ctx.shadowBlur=10;
+    ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#d4a030';ctx.shadowBlur=0;ctx.font='bold 10px Segoe UI';ctx.textAlign='center';
+    ctx.fillText('$',c.x,c.y+3.5);
+  });
+  ctx.shadowBlur=0;
+  // player
+  const lean=p.vx*0.06,bob=p.onGround?Math.sin(p.frame)*2:0;
+  ctx.save();ctx.translate(p.x+p.w/2,p.y+p.h/2+bob);ctx.rotate(lean);
+  // body
+  ctx.fillStyle='#5FC2BA';ctx.shadowColor='#5FC2BA';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.roundRect(-p.w/2,-p.h/2,p.w,p.h,5);ctx.fill();
+  ctx.shadowBlur=0;
+  // eyes
+  const ex2=p.dir*5;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex2,-p.h/2+8,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#060d1a';ctx.beginPath();ctx.arc(ex2+p.dir*1.5,-p.h/2+8,2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // HUD
+  ctx.fillStyle='#e0ecf8';ctx.font='bold 15px Segoe UI';ctx.textAlign='left';ctx.shadowBlur=0;
+  ctx.fillText('Score: '+score,10,22);
+  ctx.textAlign='right';ctx.fillText('♥'.repeat(lives),W-10,22);
+  ctx.textAlign='center';ctx.fillStyle='#8bacc8';ctx.font='12px Segoe UI';
+  ctx.fillText('Pièces : '+coins.filter(c=>c.got).length+'/'+coins.length+' | Niveau '+(lv+1),W/2,22);
+}
+
+// keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
+  if((e.key==='ArrowUp'||e.key==='w'||e.key===' ')&&!keys.jump)keys.jump=true;
+  if(e.key===' ')e.preventDefault();
+  if(over)init();
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
+  if(e.key==='ArrowUp'||e.key==='w'||e.key===' ')keys.jump=false;
+});
+
+// mobile buttons
+document.getElementById('bl').addEventListener('pointerdown',()=>keys.left=true);
+document.getElementById('bl').addEventListener('pointerup',()=>keys.left=false);
+document.getElementById('br').addEventListener('pointerdown',()=>keys.right=true);
+document.getElementById('br').addEventListener('pointerup',()=>keys.right=false);
+document.getElementById('bjump').addEventListener('pointerdown',()=>{keys.jump=true;setTimeout(()=>keys.jump=false,100);});
+
+cv.addEventListener('click',()=>{if(over)init();});
+init();
+</script>
+</body>
+</html>

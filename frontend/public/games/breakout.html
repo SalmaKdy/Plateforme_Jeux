@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Breakout — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:4px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#hud{display:flex;gap:30px;margin-bottom:10px;font-size:.95rem}
+#hud span{color:#5FC2BA;font-weight:700}
+canvas{background:#080f20;border:2px solid rgba(95,194,186,.3);border-radius:10px;box-shadow:0 0 30px rgba(95,194,186,.1);cursor:none;touch-action:none}
+#msg{margin-top:10px;font-size:.88rem;color:#8bacc8;text-align:center}
+</style>
+</head>
+<body>
+<h1>🧱 Breakout</h1>
+<div id="hud"><div>Score : <span id="sc">0</span></div><div>Vies : <span id="lv">3</span></div><div>Niveau : <span id="lvl">1</span></div></div>
+<canvas id="c" width="480" height="380"></canvas>
+<div id="msg">Cliquez ou appuyez sur Espace pour lancer la balle</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=480,H=380,PW=80,PH=10,BR=8;
+const ROWS_B=5,COLS_B=10,BW=42,BH=16,BPX=6,BPY=50;
+const COLORS=['#5FC2BA','#4aada6','#3a9890','#f0c060','#e05c5c'];
+let px=W/2-PW/2,ball,bricks,score=0,lives=3,level=1,active=false,animId;
+
+function makeBricks(){
+  bricks=[];
+  for(let r=0;r<ROWS_B;r++)for(let c=0;c<COLS_B;c++)
+    bricks.push({x:c*(BW+BPX)+BPX,y:r*(BH+6)+BPY,alive:true,color:COLORS[r]});
+}
+function resetBall(){ball={x:W/2,y:H-80,vx:3*(Math.random()<.5?1:-1)*(1+level*0.15),vy:-(3.5+level*0.2)};active=false;}
+function nextLevel(){level++;document.getElementById('lvl').textContent=level;makeBricks();resetBall();}
+
+function init(){score=0;lives=3;level=1;document.getElementById('sc').textContent=0;document.getElementById('lv').textContent=3;document.getElementById('lvl').textContent=1;makeBricks();resetBall();if(animId)cancelAnimationFrame(animId);loop();}
+
+function loop(){animId=requestAnimationFrame(loop);update();draw();}
+
+function update(){
+  if(!active){ball.x=px+PW/2;return;}
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.x<BR){ball.x=BR;ball.vx*=-1;}
+  if(ball.x>W-BR){ball.x=W-BR;ball.vx*=-1;}
+  if(ball.y<BR){ball.y=BR;ball.vy*=-1;}
+  // paddle
+  if(ball.y>H-PH-20&&ball.y<H-10&&ball.x>px&&ball.x<px+PW){
+    ball.vy=-Math.abs(ball.vy);
+    ball.vx+=((ball.x-(px+PW/2))/(PW/2))*2;
+    ball.vx=Math.max(-6,Math.min(6,ball.vx));
+  }
+  // out
+  if(ball.y>H+20){
+    lives--;document.getElementById('lv').textContent=lives;
+    if(lives<=0){active=false;cancelAnimationFrame(animId);document.getElementById('msg').innerHTML='<strong style="color:#e05c5c">Game Over</strong> — Score : '+score+'<br>Cliquez pour rejouer';animId=null;return;}
+    resetBall();document.getElementById('msg').textContent='Cliquez ou Espace pour relancer';
+  }
+  // bricks
+  let hit=false;
+  bricks.forEach(b=>{
+    if(!b.alive||hit)return;
+    if(ball.x>b.x-BR&&ball.x<b.x+BW+BR&&ball.y>b.y-BR&&ball.y<b.y+BH+BR){
+      b.alive=false;score+=10;document.getElementById('sc').textContent=score;
+      const cx=b.x+BW/2,cy=b.y+BH/2;
+      const dx=Math.abs(ball.x-cx),dy=Math.abs(ball.y-cy);
+      if(dx/BW>dy/BH)ball.vx*=-1;else ball.vy*=-1;
+      hit=true;
+    }
+  });
+  if(bricks.every(b=>!b.alive)){document.getElementById('msg').innerHTML='<strong style="color:#f0c060">🎉 Niveau '+(level)+' terminé !</strong>';setTimeout(nextLevel,1000);}
+}
+
+function draw(){
+  ctx.fillStyle='#080f20';ctx.fillRect(0,0,W,H);
+  bricks.forEach(b=>{
+    if(!b.alive)return;
+    ctx.fillStyle=b.color;ctx.shadowColor=b.color;ctx.shadowBlur=4;
+    ctx.beginPath();ctx.roundRect(b.x,b.y,BW,BH,3);ctx.fill();
+  });
+  ctx.shadowBlur=0;
+  // paddle
+  ctx.fillStyle='#5FC2BA';ctx.shadowColor='#5FC2BA';ctx.shadowBlur=14;
+  ctx.beginPath();ctx.roundRect(px,H-PH-10,PW,PH,5);ctx.fill();
+  ctx.shadowBlur=0;
+  // ball
+  ctx.fillStyle='#ffffff';ctx.shadowColor='#fff';ctx.shadowBlur=12;
+  ctx.beginPath();ctx.arc(ball.x,ball.y,BR,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+// Controls
+cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();px=Math.max(0,Math.min(W-PW,e.clientX-r.left-PW/2));});
+cv.addEventListener('touchmove',e=>{e.preventDefault();const r=cv.getBoundingClientRect();px=Math.max(0,Math.min(W-PW,e.touches[0].clientX-r.left-PW/2));},{passive:false});
+function launch(){if(!animId){init();return;}if(!active){active=true;document.getElementById('msg').textContent='';}}
+cv.addEventListener('click',launch);
+document.addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();launch();}});
+init();
+</script>
+</body>
+</html>

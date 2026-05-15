@@ -7,6 +7,35 @@
     --text: #FFFFFF;
 }
 
+/* ── Custom scrollbar — Chrome, Edge, Safari ─────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #060d1a;
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #5FC2BA, #3aa89f, #1e7a74);
+    border-radius: 999px;
+    border: 2px solid #060d1a;
+    box-shadow: 0 0 10px rgba(95, 194, 186, 0.35);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #8eeae3, #5FC2BA, #3aa89f);
+    box-shadow: 0 0 16px rgba(95, 194, 186, 0.6);
+}
+
+/* ── Firefox scrollbar ───────────────────────────────────── */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #3aa89f #060d1a;
+}
+
 /* GLOBAL */
 html {
     margin: 0;
@@ -67,6 +96,30 @@ video {
 .navbar-center a:hover,
 .navbar-right a:hover {
     color: var(--accent);
+}
+
+/* Active page indicator */
+.navbar-center a.nav-active,
+.navbar-right a.nav-active {
+    color: var(--accent);
+    position: relative;
+}
+
+.navbar-center a.nav-active::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(95, 194, 186, 0.65);
+}
+
+.btn-register.nav-active {
+    box-shadow: 0 0 28px rgba(95, 194, 186, 0.55), inset 0 0 20px rgba(255, 255, 255, 0.1);
+    border-color: #ffffff;
 }
 
 /* BUTTON */

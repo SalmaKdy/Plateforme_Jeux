@@ -17,6 +17,7 @@ function Footer() {
                     <Link to="/">Accueil</Link>
                     <Link to="/games">Jeux</Link>
                     <Link to="/about">À propos</Link>
+                    <Link to="/contact">Contact</Link>
                 </div>
 
                 <div className="footer-links">

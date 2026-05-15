@@ -26,7 +26,14 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         String token = authService.register(request);
-        return ResponseEntity.ok(Map.of("token", token, "message", "Inscription réussie"));
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "message", "Inscription réussie",
+                "username", user.getUsername(),
+                "role", user.getRole()
+        ));
     }
 
     @PostMapping("/login")
@@ -34,7 +41,12 @@ public class AuthController {
         String token = authService.login(request);
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        return ResponseEntity.ok(Map.of("token", token, "message", "Connexion réussie", "username", user.getUsername()));
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "message", "Connexion réussie",
+                "username", user.getUsername(),
+                "role", user.getRole()
+        ));
     }
 
     @ExceptionHandler(RuntimeException.class)

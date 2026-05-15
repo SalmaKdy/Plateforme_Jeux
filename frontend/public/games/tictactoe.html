@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tic-Tac-Toe — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:4px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#scores{display:flex;gap:14px;margin-bottom:14px}
+.sbox{background:rgba(95,194,186,.1);border:1px solid rgba(95,194,186,.2);border-radius:8px;padding:6px 16px;text-align:center;min-width:80px}
+.sbox label{display:block;font-size:.65rem;color:#8bacc8;text-transform:uppercase;letter-spacing:1px}
+.sbox span{font-size:1.3rem;font-weight:700}
+#you span{color:#5FC2BA}#ai span{color:#e05c5c}#draws span{color:#8bacc8}
+#board{display:grid;grid-template-columns:repeat(3,110px);grid-template-rows:repeat(3,110px);gap:8px}
+.cell{width:110px;height:110px;background:rgba(10,22,44,.8);border:1.5px solid rgba(95,194,186,.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:3rem;cursor:pointer;transition:all .15s}
+.cell:hover:empty{background:rgba(95,194,186,.08);border-color:rgba(95,194,186,.35)}
+.cell.x{color:#5FC2BA;text-shadow:0 0 18px rgba(95,194,186,.7)}
+.cell.o{color:#e05c5c;text-shadow:0 0 18px rgba(224,92,92,.7)}
+.cell.win{background:rgba(95,194,186,.15);border-color:#5FC2BA;box-shadow:0 0 20px rgba(95,194,186,.25)}
+.cell.o.win{background:rgba(224,92,92,.12);border-color:#e05c5c;box-shadow:0 0 20px rgba(224,92,92,.2)}
+#msg{margin-top:14px;font-size:1rem;color:#e0ecf8;min-height:1.6em;text-align:center}
+button{margin-top:10px;padding:8px 22px;background:rgba(95,194,186,.15);border:1px solid rgba(95,194,186,.35);color:#5FC2BA;border-radius:8px;cursor:pointer;font-size:.9rem}
+button:hover{background:rgba(95,194,186,.25)}
+</style>
+</head>
+<body>
+<h1>⭕ Tic-Tac-Toe</h1>
+<div id="scores">
+  <div class="sbox" id="you"><label>Vous (✕)</label><span id="sw">0</span></div>
+  <div class="sbox" id="draws"><label>Nuls</label><span id="sd">0</span></div>
+  <div class="sbox" id="ai"><label>IA (○)</label><span id="sa">0</span></div>
+</div>
+<div id="board"></div>
+<div id="msg">Cliquez pour jouer — Vous êtes ✕</div>
+<button onclick="reset()">Nouvelle partie</button>
+<script>
+let board,turn,over,wins=[0,0,0],LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function checkWin(b,p){return LINES.find(l=>l.every(i=>b[i]===p))||null;}
+function isFull(b){return b.every(c=>c);}
+
+function minimax(b,isMax,depth){
+  if(checkWin(b,'O'))return 10-depth;
+  if(checkWin(b,'X'))return depth-10;
+  if(isFull(b))return 0;
+  let best=isMax?-Infinity:Infinity;
+  for(let i=0;i<9;i++){
+    if(b[i])continue;
+    b[i]=isMax?'O':'X';
+    const v=minimax(b,!isMax,depth+1);
+    b[i]=null;
+    if(isMax)best=Math.max(best,v);else best=Math.min(best,v);
+  }
+  return best;
+}
+
+function aiMove(){
+  let best=-Infinity,move=null;
+  for(let i=0;i<9;i++){
+    if(board[i])continue;
+    board[i]='O';
+    const v=minimax(board,false,0);
+    board[i]=null;
+    if(v>best){best=v;move=i;}
+  }
+  return move;
+}
+
+function render(winLine){
+  const b=document.getElementById('board');b.innerHTML='';
+  board.forEach((v,i)=>{
+    const el=document.createElement('div');
+    el.className='cell'+(v?' '+v.toLowerCase():'')+(winLine&&winLine.includes(i)?' win':'');
+    el.textContent=v||'';
+    if(!v&&!over)el.addEventListener('click',()=>play(i));
+    b.appendChild(el);
+  });
+}
+
+function play(i){
+  if(board[i]||turn!=='X'||over)return;
+  board[i]='X';turn='O';
+  let wl=checkWin(board,'X');
+  if(wl){over=true;wins[0]++;document.getElementById('sw').textContent=wins[0];document.getElementById('msg').innerHTML='<strong style="color:#5FC2BA">🎉 Vous avez gagné !</strong>';render(wl);return;}
+  if(isFull(board)){over=true;wins[2]++;document.getElementById('sd').textContent=wins[2];document.getElementById('msg').textContent='Match nul !';render();return;}
+  render();
+  document.getElementById('msg').textContent="L'IA réfléchit...";
+  setTimeout(()=>{
+    const m=aiMove();if(m===null)return;
+    board[m]='O';turn='X';
+    wl=checkWin(board,'O');
+    if(wl){over=true;wins[1]++;document.getElementById('sa').textContent=wins[1];document.getElementById('msg').innerHTML='<strong style="color:#e05c5c">L\'IA a gagné !</strong> Réessayez.';render(wl);return;}
+    if(isFull(board)){over=true;wins[2]++;document.getElementById('sd').textContent=wins[2];document.getElementById('msg').textContent='Match nul !';render();return;}
+    document.getElementById('msg').textContent='À votre tour !';render();
+  },350);
+}
+
+function reset(){
+  board=Array(9).fill(null);turn='X';over=false;
+  document.getElementById('msg').textContent='Cliquez pour jouer — Vous êtes ✕';
+  render();
+}
+reset();
+</script>
+</body>
+</html>

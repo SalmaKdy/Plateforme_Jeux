@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whack-a-Mole — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:4px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#hud{display:flex;gap:20px;margin-bottom:14px}
+.hbox{background:rgba(95,194,186,.1);border:1px solid rgba(95,194,186,.2);border-radius:8px;padding:6px 16px;text-align:center}
+.hbox label{display:block;font-size:.62rem;color:#8bacc8;text-transform:uppercase;letter-spacing:1px}
+.hbox span{font-size:1.3rem;font-weight:700;color:#5FC2BA}
+#grid{display:grid;grid-template-columns:repeat(3,130px);grid-template-rows:repeat(3,130px);gap:14px;background:#0a1628;padding:16px;border-radius:16px;border:1px solid rgba(95,194,186,.18);box-shadow:0 0 24px rgba(95,194,186,.06)}
+.hole{width:130px;height:130px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,#1a3560,#080f20);border:3px solid rgba(95,194,186,.2);position:relative;overflow:hidden;cursor:pointer;transition:border-color .1s}
+.hole:hover{border-color:rgba(95,194,186,.45)}
+.hole.active{border-color:#5FC2BA;box-shadow:0 0 18px rgba(95,194,186,.25)}
+.mole{position:absolute;bottom:-110px;left:50%;transform:translateX(-50%);font-size:62px;transition:bottom .14s ease-out;pointer-events:none;filter:drop-shadow(0 0 8px rgba(95,194,186,.5))}
+.hole.active .mole{bottom:0}
+.hole.hit .mole{filter:drop-shadow(0 0 12px rgba(255,100,100,.8))}
+.stars-anim{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:22px;opacity:0;transition:all .3s;pointer-events:none}
+.hole.hit .stars-anim{opacity:1;top:-10px}
+#msg{margin-top:14px;font-size:.95rem;color:#8bacc8;text-align:center;min-height:1.4em}
+button{margin-top:10px;padding:8px 24px;background:rgba(95,194,186,.15);border:1px solid rgba(95,194,186,.35);color:#5FC2BA;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600}
+button:hover{background:rgba(95,194,186,.28)}
+</style>
+</head>
+<body>
+<h1>🔨 Whack-a-Mole</h1>
+<div id="hud">
+  <div class="hbox"><label>Score</label><span id="sc">0</span></div>
+  <div class="hbox"><label>Temps</label><span id="ti">30s</span></div>
+  <div class="hbox"><label>Meilleur</label><span id="best">0</span></div>
+</div>
+<div id="grid"></div>
+<div id="msg">Cliquez pour démarrer</div>
+<button id="startBtn" onclick="startGame()">Démarrer !</button>
+<script>
+const MOLES=['🐭','🐹','🐭','🦎','🐭','🐹','🐭','🦎','🐭'];
+let score=0,best=0,timeLeft=30,active=[],timers=[],gameTimer,running=false;
+
+const grid=document.getElementById('grid');
+
+// build 9 holes
+for(let i=0;i<9;i++){
+  const hole=document.createElement('div');hole.className='hole';hole.id='h'+i;
+  hole.innerHTML=`<div class="mole">${MOLES[i]}</div><div class="stars-anim">✨</div>`;
+  hole.addEventListener('click',()=>whack(i));
+  grid.appendChild(hole);
+}
+
+function getSpeed(){return Math.max(500,1100-score*12);}
+
+function popMole(){
+  if(!running)return;
+  const avail=[...Array(9).keys()].filter(i=>!active.includes(i));
+  if(!avail.length)return;
+  const i=avail[Math.floor(Math.random()*avail.length)];
+  active.push(i);
+  document.getElementById('h'+i).classList.add('active');
+  const t=setTimeout(()=>hideMole(i),getSpeed());
+  timers[i]=t;
+}
+
+function hideMole(i){
+  active=active.filter(x=>x!==i);
+  clearTimeout(timers[i]);
+  const hole=document.getElementById('h'+i);
+  hole.classList.remove('active','hit');
+}
+
+function whack(i){
+  if(!running||!active.includes(i))return;
+  score+=10;document.getElementById('sc').textContent=score;
+  const hole=document.getElementById('h'+i);
+  hole.classList.add('hit');
+  clearTimeout(timers[i]);
+  setTimeout(()=>hideMole(i),250);
+  // extra mole frequency increases with score
+  if(score%50===0)popMole();
+}
+
+let popInterval;
+function startGame(){
+  score=0;timeLeft=30;active=[];running=true;
+  document.getElementById('sc').textContent=0;
+  document.getElementById('ti').textContent='30s';
+  document.getElementById('msg').textContent='Cliquez sur les taupes !';
+  document.getElementById('startBtn').style.display='none';
+  for(let i=0;i<9;i++)hideMole(i);
+
+  // pop moles at interval
+  popInterval=setInterval(popMole,700);
+  popMole();popMole();
+
+  // countdown
+  gameTimer=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('ti').textContent=timeLeft+'s';
+    if(timeLeft<=0){
+      clearInterval(gameTimer);clearInterval(popInterval);
+      running=false;
+      for(let i=0;i<9;i++)hideMole(i);
+      if(score>best){best=score;document.getElementById('best').textContent=best;}
+      document.getElementById('msg').innerHTML='<strong style="color:#5FC2BA">Terminé !</strong> Score final : '+score+(score>best-1&&score===best?' 🏆 Nouveau record !':'');
+      document.getElementById('startBtn').style.display='inline-block';
+    }
+  },1000);
+}
+</script>
+</body>
+</html>

@@ -20,7 +20,8 @@ public class DashboardController {
     private final PurchaseService purchaseService;
     private final CartService cartService;
 
-    public DashboardController(UserRepository userRepository, GameService gameService, PurchaseService purchaseService, CartService cartService) {
+    public DashboardController(UserRepository userRepository, GameService gameService,
+                               PurchaseService purchaseService, CartService cartService) {
         this.userRepository = userRepository;
         this.gameService = gameService;
         this.purchaseService = purchaseService;
@@ -33,13 +34,8 @@ public class DashboardController {
             return ResponseEntity.status(403).body(Map.of("error", "Unauthorized"));
         }
         User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(Map.of(
-            "username", user.getUsername(),
-            "email", user.getEmail()
-        ));
+        if (user == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(Map.of("username", user.getUsername(), "email", user.getEmail()));
     }
 
     @GetMapping("/games")
@@ -53,11 +49,9 @@ public class DashboardController {
             return ResponseEntity.status(403).body(Map.of("error", "Unauthorized"));
         }
         User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-        List<Purchase> purchases = purchaseService.getPurchasesByUser(user);
-        List<Game> games = purchases.stream().map(Purchase::getGame).toList();
+        if (user == null) return ResponseEntity.notFound().build();
+        List<Game> games = purchaseService.getPurchasesByUser(user).stream()
+            .map(Purchase::getGame).toList();
         return ResponseEntity.ok(games);
     }
 
@@ -67,10 +61,48 @@ public class DashboardController {
             return ResponseEntity.status(403).body(Map.of("error", "Unauthorized"));
         }
         User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
+        if (user == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(cartService.getCartItemsByUser(user));
+    }
+
+    @PostMapping("/cart/add")
+    public ResponseEntity<?> addToCart(@RequestBody Map<String, Object> body, Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        Long gameId = Long.valueOf(body.get("gameId").toString());
+        Game game = gameService.getGameById(gameId);
+        if (game == null) return ResponseEntity.notFound().build();
+
+        CartItem item = cartService.addToCart(user, game);
+        return ResponseEntity.ok(item);
+    }
+
+    @DeleteMapping("/cart/remove/{gameId}")
+    public ResponseEntity<?> removeFromCart(@PathVariable Long gameId, Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        cartService.removeFromCart(user, gameId);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<?> checkout(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
         List<CartItem> cartItems = cartService.getCartItemsByUser(user);
-        return ResponseEntity.ok(cartItems);
+        if (cartItems.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Le panier est vide"));
+        }
+
+        purchaseService.purchaseCartItems(user, cartItems);
+        cartService.clearCart(user);
+
+        return ResponseEntity.ok(Map.of("success", true, "message", "Achat réussi!"));
     }
 }

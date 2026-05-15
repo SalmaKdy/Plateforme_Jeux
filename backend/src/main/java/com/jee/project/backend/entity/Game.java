@@ -21,7 +21,7 @@ public class Game {
     @Column(nullable = false)
     private String price;
 
-    @Column
+    @Column(length = 2000)
     private String description;
 
     @Column
@@ -29,4 +29,16 @@ public class Game {
 
     @Column
     private boolean free = false;
+
+    @Column(length = 500)
+    private String imageUrl;
+
+    @Column
+    private String externalId;
+
+    @Column(length = 500)
+    private String gameUrl;
+
+    @Column
+    private String platform;
 }

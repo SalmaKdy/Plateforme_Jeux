@@ -22,3 +22,30 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Java / Spring Boot
+target/
+*.class
+
+# Environment files
+.env
+.env.local
+.env.*.local
+application-local.properties
+
+# Temporary generated folders/files
+v0*/
+claude*/
+generated/
+tmp/
+temp/
+
+# Local reports / documentation not for GitHub
+GameHub_Rapport_Technique.docx
+GameHub_Rapport_Technique.md
+
+# Accidental npm lock file in backend Java project
+backend/package-lock.json
+
+# OS files
+Thumbs.db

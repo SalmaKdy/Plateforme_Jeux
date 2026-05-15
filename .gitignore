@@ -26,7 +26,7 @@ backend/run.log
 
 # ─── Node / npm ──────────────────────────────────────────
 node_modules/
-/package-lock.json
+backend/package-lock.json
 
 # ─── Vite / React build output ───────────────────────────
 dist/
@@ -44,3 +44,8 @@ dist-ssr/
 *.jar
 !**/src/**/*.jar
 .gitignore.txt
+/GameHub_Rapport_Technique.docx
+/GameHub_Rapport_Technique.md
+/generate_report.py
+
+/package-lock.json

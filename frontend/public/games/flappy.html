@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flappy Bird — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:6px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+canvas{border:2px solid rgba(95,194,186,.3);border-radius:10px;box-shadow:0 0 30px rgba(95,194,186,.1)}
+#msg{margin-top:12px;font-size:.9rem;color:#8bacc8;text-align:center}
+</style>
+</head>
+<body>
+<h1>🐦 Flappy Bird</h1>
+<canvas id="c" width="360" height="480"></canvas>
+<div id="msg">Espace / Clic / Tap pour voler</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=480,GW=50,GAP=140,SPEED=2.5,GRAVITY=0.45,JUMP=-8;
+let bird,pipes,score,best=0,state; // state: idle|play|dead
+
+function init(){
+  bird={x:80,y:H/2,vy:0,r:14};
+  pipes=[];score=0;state='idle';
+  document.getElementById('msg').textContent='Espace / Clic / Tap pour voler';
+  if(!animId)loop();
+}
+
+let animId;
+function loop(){animId=requestAnimationFrame(loop);update();draw();}
+
+function flap(){
+  if(state==='dead'){init();return;}
+  if(state==='idle'){state='play';document.getElementById('msg').textContent='';}
+  bird.vy=JUMP;
+}
+
+function update(){
+  if(state!=='play')return;
+  bird.vy+=GRAVITY;bird.y+=bird.vy;
+  // pipes
+  if(!pipes.length||pipes[pipes.length-1].x<W-180){
+    const top=60+Math.random()*(H-GAP-120);
+    pipes.push({x:W,top,bot:top+GAP,passed:false});
+  }
+  pipes.forEach(p=>p.x-=SPEED);
+  pipes=pipes.filter(p=>p.x>-GW-10);
+  // score
+  pipes.forEach(p=>{if(!p.passed&&p.x+GW<bird.x){p.passed=true;score++;}});
+  // collision
+  const died=bird.y-bird.r<0||bird.y+bird.r>H||
+    pipes.some(p=>bird.x+bird.r>p.x&&bird.x-bird.r<p.x+GW&&(bird.y-bird.r<p.top||bird.y+bird.r>p.bot));
+  if(died){
+    state='dead';if(score>best)best=score;
+    document.getElementById('msg').innerHTML='<strong style="color:#e05c5c">Game Over</strong> — Score: '+score+' | Meilleur: '+best+'<br>Clic pour rejouer';
+  }
+}
+
+function draw(){
+  // sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#060d1a');sky.addColorStop(1,'#0a1628');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='rgba(95,194,186,.15)';
+  for(let i=0;i<30;i++){const sx=(i*137)%W,sy=(i*89)%H;ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();}
+  // pipes
+  pipes.forEach(p=>{
+    ctx.fillStyle='#2a7060';ctx.shadowColor='#5FC2BA';ctx.shadowBlur=8;
+    // top pipe
+    ctx.beginPath();ctx.roundRect(p.x,0,GW,p.top,4);ctx.fill();
+    // bottom pipe
+    ctx.beginPath();ctx.roundRect(p.x,p.bot,GW,H-p.bot,4);ctx.fill();
+    // pipe caps
+    ctx.fillStyle='#3a9080';
+    ctx.beginPath();ctx.roundRect(p.x-4,p.top-14,GW+8,14,4);ctx.fill();
+    ctx.beginPath();ctx.roundRect(p.x-4,p.bot,GW+8,14,4);ctx.fill();
+  });
+  ctx.shadowBlur=0;
+  // bird body
+  ctx.fillStyle=state==='dead'?'#e05c5c':'#f0c060';
+  ctx.shadowColor=state==='dead'?'#e05c5c':'#f0c060';ctx.shadowBlur=12;
+  ctx.beginPath();ctx.ellipse(bird.x,bird.y,bird.r,bird.r*0.85,bird.vy*0.03,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // wing
+  ctx.fillStyle='#d4a030';
+  ctx.beginPath();ctx.ellipse(bird.x-4,bird.y+2,8,5,0.4,0,Math.PI*2);ctx.fill();
+  // eye
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bird.x+6,bird.y-4,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(bird.x+7,bird.y-4,2,0,Math.PI*2);ctx.fill();
+  // beak
+  ctx.fillStyle='#e07020';ctx.beginPath();ctx.moveTo(bird.x+bird.r,bird.y);ctx.lineTo(bird.x+bird.r+8,bird.y+2);ctx.lineTo(bird.x+bird.r,bird.y+5);ctx.closePath();ctx.fill();
+  // score
+  ctx.fillStyle='#e0ecf8';ctx.font='bold 26px Segoe UI';ctx.textAlign='center';ctx.shadowBlur=0;
+  ctx.fillText(score,W/2,44);
+  if(state==='idle'){
+    ctx.fillStyle='rgba(95,194,186,.85)';ctx.font='bold 18px Segoe UI';
+    ctx.fillText('Appuyez pour démarrer',W/2,H/2+60);
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();flap();}});
+cv.addEventListener('click',flap);
+cv.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
+init();
+</script>
+</body>
+</html>

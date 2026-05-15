@@ -20,10 +20,15 @@ export async function registerUser(userData) {
         throw new Error(data.message || "Erreur lors de l'inscription");
     }
 
-    // Store token
+    // Store token + role
     if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify({ username: userData.username, email: userData.email, isAuthenticated: true }));
+        localStorage.setItem("user", JSON.stringify({
+            username: userData.username,
+            email: userData.email,
+            role: data.role || "USER",
+            isAuthenticated: true,
+        }));
     }
 
     return data;
@@ -49,10 +54,15 @@ export async function loginUser(userData) {
         throw new Error(data.message || "Erreur lors de la connexion");
     }
 
-    // Store token
+    // Store token + role
     if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify({ email: userData.email, username: data.username, isAuthenticated: true }));
+        localStorage.setItem("user", JSON.stringify({
+            email: userData.email,
+            username: data.username,
+            role: data.role || "USER",
+            isAuthenticated: true,
+        }));
     }
 
     return data;

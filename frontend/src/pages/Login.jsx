@@ -78,8 +78,9 @@ export default function Login() {
                 localStorage.removeItem("rememberedEmail");
             }
 
+            const destination = data.role === "ADMIN" ? "/admin/dashboard" : "/dashboard";
             setTimeout(() => {
-                navigate("/dashboard");
+                navigate(destination);
             }, 1200);
         } catch (error) {
             setServerError(error.message);

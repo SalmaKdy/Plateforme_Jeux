@@ -20,6 +20,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'USER'")
+    private String role = "USER";
+
     public User() {
     }
 
@@ -27,6 +30,7 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.role = "USER";
     }
 
     public Long getId() {
@@ -55,5 +59,13 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role != null ? role : "USER";
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

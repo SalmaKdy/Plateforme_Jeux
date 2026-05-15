@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memory Match — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:4px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#hud{display:flex;gap:28px;margin-bottom:14px;font-size:.9rem}
+.hitem{background:rgba(95,194,186,.1);border:1px solid rgba(95,194,186,.2);border-radius:8px;padding:6px 14px;text-align:center}
+.hitem label{display:block;font-size:.65rem;color:#8bacc8;text-transform:uppercase;letter-spacing:1px}
+.hitem span{font-size:1.1rem;font-weight:700;color:#5FC2BA}
+#grid{display:grid;grid-template-columns:repeat(4,80px);gap:10px}
+.card{width:80px;height:80px;border-radius:12px;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform .35s ease}
+.card.flipped{transform:rotateY(180deg)}
+.card.matched{transform:rotateY(180deg)}
+.card-back,.card-front{position:absolute;inset:0;border-radius:12px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card-back{background:linear-gradient(135deg,#0f2d4a,#1a3560);border:1.5px solid rgba(95,194,186,.25);font-size:1.6rem;color:rgba(95,194,186,.3)}
+.card-front{background:linear-gradient(135deg,#0d2540,#152e50);border:2px solid rgba(95,194,186,.5);font-size:2rem;transform:rotateY(180deg);box-shadow:0 0 16px rgba(95,194,186,.2)}
+.card.matched .card-front{border-color:#5FC2BA;box-shadow:0 0 20px rgba(95,194,186,.5);background:linear-gradient(135deg,#0d3040,#1a4555)}
+#msg{margin-top:14px;font-size:.9rem;color:#8bacc8;text-align:center;min-height:1.4em}
+button{margin-top:10px;padding:8px 22px;background:rgba(95,194,186,.15);border:1px solid rgba(95,194,186,.35);color:#5FC2BA;border-radius:8px;cursor:pointer;font-size:.9rem}
+button:hover{background:rgba(95,194,186,.25)}
+</style>
+</head>
+<body>
+<h1>🃏 Memory Match</h1>
+<div id="hud">
+  <div class="hitem"><label>Coups</label><span id="moves">0</span></div>
+  <div class="hitem"><label>Paires</label><span id="pairs">0 / 8</span></div>
+  <div class="hitem"><label>Temps</label><span id="timer">0s</span></div>
+</div>
+<div id="grid"></div>
+<div id="msg">Cliquez sur une carte pour commencer</div>
+<button onclick="init()">Nouvelle partie</button>
+<script>
+const SYMBOLS=['🎮','🏆','💎','🚀','⚔️','🔮','🌟','🎯'];
+let cards,flipped,matched,moves,startTime,timerInterval,locked;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function init(){
+  clearInterval(timerInterval);
+  cards=shuffle([...SYMBOLS,...SYMBOLS].map((s,i)=>({id:i,symbol:s,flipped:false,matched:false})));
+  flipped=[];matched=0;moves=0;startTime=null;locked=false;
+  document.getElementById('moves').textContent=0;
+  document.getElementById('pairs').textContent='0 / 8';
+  document.getElementById('timer').textContent='0s';
+  document.getElementById('msg').textContent='Cliquez sur une carte pour commencer';
+  render();
+}
+
+function render(){
+  const g=document.getElementById('grid');g.innerHTML='';
+  cards.forEach((card,i)=>{
+    const el=document.createElement('div');el.className='card'+(card.flipped||card.matched?' flipped':'')+(card.matched?' matched':'');
+    el.innerHTML='<div class="card-back">?</div><div class="card-front">'+card.symbol+'</div>';
+    el.addEventListener('click',()=>flip(i));
+    g.appendChild(el);
+  });
+}
+
+function flip(i){
+  if(locked||cards[i].flipped||cards[i].matched||flipped.length>=2)return;
+  if(!startTime){startTime=Date.now();timerInterval=setInterval(()=>{document.getElementById('timer').textContent=Math.floor((Date.now()-startTime)/1000)+'s';},1000);}
+  cards[i].flipped=true;flipped.push(i);render();
+  if(flipped.length===2){
+    moves++;document.getElementById('moves').textContent=moves;
+    locked=true;
+    setTimeout(()=>{
+      const[a,b]=flipped;
+      if(cards[a].symbol===cards[b].symbol){
+        cards[a].matched=cards[b].matched=true;
+        matched++;
+        document.getElementById('pairs').textContent=matched+' / 8';
+        if(matched===8){
+          clearInterval(timerInterval);
+          const t=Math.floor((Date.now()-startTime)/1000);
+          document.getElementById('msg').innerHTML='<strong style="color:#5FC2BA">🎉 Félicitations !</strong> Terminé en '+moves+' coups et '+t+'s !';
+        }
+      } else {
+        cards[a].flipped=cards[b].flipped=false;
+      }
+      flipped=[];locked=false;render();
+    },700);
+  }
+}
+init();
+</script>
+</body>
+</html>

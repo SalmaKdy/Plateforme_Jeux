@@ -1,0 +1,335 @@
+/* ─── Profile grid layout ────────────────────────────────── */
+.apr-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+/* ─── Avatar card ────────────────────────────────────────── */
+.apr-avatar-card {
+    background: rgba(10, 22, 44, 0.78);
+    border: 1px solid rgba(95, 194, 186, 0.14);
+    border-radius: 22px;
+    padding: 36px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+
+.apr-big-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(95, 194, 186, 0.35), rgba(95, 194, 186, 0.08));
+    border: 2px solid rgba(95, 194, 186, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #5FC2BA;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 28px rgba(95, 194, 186, 0.18);
+}
+
+.apr-avatar-glow {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(95, 194, 186, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.apr-display-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #e0ecf8;
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+.apr-role-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(95, 194, 186, 0.12);
+    border: 1px solid rgba(95, 194, 186, 0.28);
+    color: #5FC2BA;
+    padding: 4px 14px;
+    border-radius: 999px;
+}
+
+.apr-display-email {
+    font-size: 0.82rem;
+    color: #5a7a96;
+    margin: 0;
+    text-align: center;
+    word-break: break-all;
+}
+
+.apr-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 14px;
+    border-top: 1px solid rgba(95, 194, 186, 0.08);
+    margin-top: 4px;
+}
+
+.apr-meta-label {
+    font-size: 0.75rem;
+    color: #3d5a72;
+}
+
+.apr-meta-value {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #5a7a96;
+}
+
+/* ─── Info column ────────────────────────────────────────── */
+.apr-info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.apr-info-card {
+    /* inherits .adm-card */
+}
+
+/* ─── Info rows (read mode) ──────────────────────────────── */
+.apr-info-rows {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+}
+
+.apr-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 26px;
+    border-bottom: 1px solid rgba(95, 194, 186, 0.06);
+}
+
+.apr-info-row:last-child {
+    border-bottom: none;
+}
+
+.apr-info-label {
+    font-size: 0.82rem;
+    color: #5a7a96;
+    font-weight: 500;
+}
+
+.apr-info-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #c8dff0;
+}
+
+.apr-id-value {
+    color: #3d5a72;
+}
+
+.apr-password-mask {
+    color: #3d5a72;
+    letter-spacing: 2px;
+}
+
+/* ─── Edit form ──────────────────────────────────────────── */
+.apr-form {
+    padding: 20px 26px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.apr-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.apr-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #5a7a96;
+}
+
+.apr-input {
+    background: rgba(6, 13, 26, 0.6);
+    border: 1px solid rgba(95, 194, 186, 0.2);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: #c8dff0;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.apr-input:focus {
+    border-color: rgba(95, 194, 186, 0.5);
+    box-shadow: 0 0 0 3px rgba(95, 194, 186, 0.08);
+}
+
+
+.apr-form-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.apr-save-btn {
+    flex: 1;
+    padding: 12px 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #5FC2BA, #3aa89f);
+    border: none;
+    color: #060d1a;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, box-shadow 0.15s, transform 0.15s;
+    box-shadow: 0 0 18px rgba(95, 194, 186, 0.28);
+    font-family: inherit;
+}
+
+.apr-save-btn:hover:not(:disabled) {
+    opacity: 0.88;
+    box-shadow: 0 0 28px rgba(95, 194, 186, 0.5);
+    transform: translateY(-1px);
+}
+
+.apr-save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.apr-cancel-btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid rgba(95, 194, 186, 0.2);
+    color: #5a7a96;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+}
+
+.apr-cancel-btn:hover:not(:disabled) {
+    background: rgba(95, 194, 186, 0.06);
+    color: #8bacc8;
+}
+
+.apr-cancel-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ─── Password card ──────────────────────────────────────── */
+.apr-pwd-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.apr-pwd-icon {
+    font-size: 1rem;
+}
+
+.apr-pwd-toggle-btn {
+    background: rgba(95, 194, 186, 0.08);
+    border: 1px solid rgba(95, 194, 186, 0.22);
+    color: #5FC2BA;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+}
+
+.apr-pwd-toggle-btn:hover {
+    background: rgba(95, 194, 186, 0.16);
+}
+
+.apr-pwd-closed {
+    padding: 16px 26px 20px;
+}
+
+.apr-pwd-hint {
+    font-size: 0.83rem;
+    color: #3d5a72;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.apr-pwd-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(224, 92, 92, 0.1);
+    border: 1px solid rgba(224, 92, 92, 0.28);
+    color: #e05c5c;
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 10px;
+}
+
+/* ─── Security notice ────────────────────────────────────── */
+.apr-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(95, 194, 186, 0.04);
+    border: 1px solid rgba(95, 194, 186, 0.1);
+    border-radius: 14px;
+    padding: 16px 18px;
+}
+
+.apr-notice-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.apr-notice-text {
+    font-size: 0.82rem;
+    color: #5a7a96;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 960px) {
+    .apr-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .apr-avatar-card {
+        max-width: 380px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}

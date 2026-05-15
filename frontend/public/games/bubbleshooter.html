@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bubble Shooter — GameHub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#e0ecf8;user-select:none;overflow:hidden}
+h1{font-size:1.8rem;color:#5FC2BA;margin-bottom:4px;text-shadow:0 0 20px rgba(95,194,186,.5)}
+#hud{display:flex;gap:20px;margin-bottom:8px;font-size:.9rem}
+.hb{background:rgba(95,194,186,.1);border:1px solid rgba(95,194,186,.2);border-radius:8px;padding:5px 14px;text-align:center}
+.hb label{display:block;font-size:.62rem;color:#8bacc8;text-transform:uppercase;letter-spacing:1px}
+.hb span{font-size:1.1rem;font-weight:700;color:#5FC2BA}
+canvas{background:#080f20;border:2px solid rgba(95,194,186,.3);border-radius:10px;box-shadow:0 0 24px rgba(95,194,186,.1);cursor:crosshair}
+#msg{margin-top:10px;font-size:.88rem;color:#8bacc8;text-align:center}
+</style>
+</head>
+<body>
+<h1>🫧 Bubble Shooter</h1>
+<div id="hud">
+  <div class="hb"><label>Score</label><span id="sc">0</span></div>
+  <div class="hb"><label>Bulles</label><span id="rem">0</span></div>
+</div>
+<canvas id="c" width="330" height="460"></canvas>
+<div id="msg">Cliquez pour tirer · Videz le plateau !</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=330,H=460,COLS=11,ROWS=10,R=14,SHOOTER_Y=430;
+const COLORS=['#e05c5c','#5FC2BA','#f0c060','#a855f7','#f97316','#22c55e'];
+let grid,shooter,bullet,score,animId,over,popping;
+
+function rndColor(){return COLORS[Math.floor(Math.random()*COLORS.length)];}
+function cellX(col,row){return (row%2===0?R:R*2)+col*(R*2)+R;}
+function cellY(row){return row*(R*1.73)+R+2;}
+
+function initGrid(){
+  grid=[];
+  for(let r=0;r<ROWS;r++){
+    grid[r]=[];
+    const cols=r%2===0?COLS:COLS-1;
+    for(let c=0;c<cols;c++)grid[r][c]={color:rndColor(),x:cellX(c,r),y:cellY(r),r:R,popping:false};
+  }
+}
+
+function newBullet(){
+  const color=COLORS[Math.floor(Math.random()*Math.min(4,COLORS.length))];
+  shooter={x:W/2,color,nextColor:rndColor()};
+  bullet=null;
+}
+
+function init(){
+  score=0;over=false;popping=false;
+  initGrid();newBullet();
+  document.getElementById('sc').textContent=0;
+  document.getElementById('msg').textContent='Cliquez pour tirer · Videz le plateau !';
+  if(animId)cancelAnimationFrame(animId);loop();
+}
+
+function countBubbles(){return grid.reduce((a,r)=>a+r.filter(c=>c&&!c.popping).length,0);}
+
+function findNeighbors(r,c,color,visited=new Set()){
+  const key=r+','+c;
+  if(visited.has(key))return[];
+  if(r<0||r>=grid.length)return[];
+  if(!grid[r]||!grid[r][c]||grid[r][c].popping)return[];
+  if(grid[r][c].color!==color)return[];
+  visited.add(key);
+  const result=[[r,c]];
+  const even=r%2===0;
+  const neighbors=even
+    ?[[r-1,c-1],[r-1,c],[r,c-1],[r,c+1],[r+1,c-1],[r+1,c]]
+    :[[r-1,c],[r-1,c+1],[r,c-1],[r,c+1],[r+1,c],[r+1,c+1]];
+  neighbors.forEach(([nr,nc])=>result.push(...findNeighbors(nr,nc,color,visited)));
+  return result;
+}
+
+function snapBullet(){
+  let bestR=-1,bestC=-1,bestDist=Infinity;
+  grid.forEach((row,r)=>row.forEach((cell,c)=>{
+    if(!cell)return;
+    const dist=Math.hypot(bullet.x-cell.x,bullet.y-cell.y);
+    if(dist<R*2.2&&dist<bestDist){bestDist=dist;bestR=r;bestC=c;}
+  }));
+  // snap to grid position near bestR/bestC
+  if(bestR>=0){
+    const trySpots=[[bestR-1,bestC],[bestR-1,bestC+(bestR%2===0?0:1)],[bestR,bestC-1],[bestR,bestC+1]];
+    let placed=false;
+    for(const[nr,nc]of trySpots){
+      if(nr>=0&&nr<ROWS){
+        const row=grid[nr]||(grid[nr]=[]);
+        if(!row[nc]){
+          const cols=nr%2===0?COLS:COLS-1;
+          if(nc>=0&&nc<cols){
+            row[nc]={color:bullet.color,x:cellX(nc,nr),y:cellY(nr),r:R,popping:false};
+            // check matches
+            const matches=findNeighbors(nr,nc,bullet.color);
+            if(matches.length>=3){
+              popping=true;
+              matches.forEach(([mr,mc])=>{if(grid[mr][mc])grid[mr][mc].popping=true;});
+              score+=matches.length*10;document.getElementById('sc').textContent=score;
+              setTimeout(()=>{matches.forEach(([mr,mc])=>grid[mr][mc]=null);popping=false;newBullet();checkWin();},350);
+            } else newBullet();
+            placed=true;break;
+          }
+        }
+      }
+    }
+    if(!placed)newBullet();
+  } else newBullet();
+  bullet=null;
+}
+
+function checkWin(){
+  const rem=countBubbles();document.getElementById('rem').textContent=rem;
+  if(rem===0){over=true;document.getElementById('msg').innerHTML='<strong style="color:#5FC2BA">🎉 Gagné !</strong> Score: '+score+' · Clic pour rejouer';}
+}
+
+function loop(){
+  animId=requestAnimationFrame(loop);
+  if(bullet&&!popping){
+    bullet.x+=bullet.vx;bullet.y+=bullet.vy;
+    if(bullet.x-R<0){bullet.x=R;bullet.vx*=-1;}
+    if(bullet.x+R>W){bullet.x=W-R;bullet.vx*=-1;}
+    if(bullet.y-R<0){bullet.y=R;snapBullet();}
+    else{
+      let hit=false;
+      grid.forEach((row,r)=>row.forEach((cell,c)=>{
+        if(hit||!cell||cell.popping)return;
+        if(Math.hypot(bullet.x-cell.x,bullet.y-cell.y)<R*1.9){snapBullet();hit=true;}
+      }));
+    }
+    document.getElementById('rem').textContent=countBubbles();
+  }
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle='#080f20';ctx.fillRect(0,0,W,H);
+  // grid bubbles
+  grid.forEach(row=>row&&row.forEach(cell=>{
+    if(!cell)return;
+    const alpha=cell.popping?.4:1;
+    ctx.globalAlpha=alpha;
+    const g=ctx.createRadialGradient(cell.x-4,cell.y-4,2,cell.x,cell.y,R);
+    g.addColorStop(0,'rgba(255,255,255,.4)');g.addColorStop(1,cell.color);
+    ctx.fillStyle=g;ctx.shadowColor=cell.color;ctx.shadowBlur=cell.popping?20:6;
+    ctx.beginPath();ctx.arc(cell.x,cell.y,R,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }));
+  // bullet
+  if(bullet){
+    const g=ctx.createRadialGradient(bullet.x-4,bullet.y-4,2,bullet.x,bullet.y,R);
+    g.addColorStop(0,'rgba(255,255,255,.5)');g.addColorStop(1,bullet.color);
+    ctx.fillStyle=g;ctx.shadowColor=bullet.color;ctx.shadowBlur=14;
+    ctx.beginPath();ctx.arc(bullet.x,bullet.y,R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  }
+  // aim line
+  if(!bullet&&shooter){
+    ctx.setLineDash([6,8]);ctx.strokeStyle='rgba(95,194,186,.2)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(shooter.x,SHOOTER_Y);ctx.lineTo(shooter.x,SHOOTER_Y-80);ctx.stroke();ctx.setLineDash([]);
+  }
+  // shooter
+  if(shooter){
+    const g=ctx.createRadialGradient(shooter.x-4,SHOOTER_Y-4,2,shooter.x,SHOOTER_Y,R+2);
+    g.addColorStop(0,'rgba(255,255,255,.5)');g.addColorStop(1,shooter.color);
+    ctx.fillStyle=g;ctx.shadowColor=shooter.color;ctx.shadowBlur=16;
+    ctx.beginPath();ctx.arc(shooter.x,SHOOTER_Y,R+2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    // next
+    ctx.fillStyle='rgba(138,172,200,.4)';ctx.font='10px Segoe UI';ctx.textAlign='left';ctx.fillText('Suivant:',8,SHOOTER_Y+4);
+    const g2=ctx.createRadialGradient(70,SHOOTER_Y,2,70,SHOOTER_Y,R);
+    g2.addColorStop(0,'rgba(255,255,255,.4)');g2.addColorStop(1,shooter.nextColor);
+    ctx.fillStyle=g2;ctx.beginPath();ctx.arc(70,SHOOTER_Y,R,0,Math.PI*2);ctx.fill();
+  }
+  if(over){ctx.fillStyle='rgba(6,13,26,.75)';ctx.fillRect(0,0,W,H);}
+}
+
+cv.addEventListener('click',e=>{
+  if(over){init();return;}
+  if(bullet||popping)return;
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const dx=mx-shooter.x,dy=my-SHOOTER_Y;
+  const len=Math.hypot(dx,dy);
+  if(dy>=0)return; // only shoot upward
+  const spd=8;
+  bullet={x:shooter.x,y:SHOOTER_Y,vx:(dx/len)*spd,vy:(dy/len)*spd,color:shooter.color};
+  shooter.color=shooter.nextColor;shooter.nextColor=rndColor();
+});
+
+cv.addEventListener('mousemove',e=>{
+  if(!shooter||bullet)return;
+  const rect=cv.getBoundingClientRect();shooter.x=Math.max(R,Math.min(W-R,e.clientX-rect.left));
+});
+
+init();
+</script>
+</body>
+</html>
